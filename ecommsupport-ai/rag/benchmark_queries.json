@@ -1,0 +1,24 @@
+[
+  {"id": "S1", "type": "simple", "query": "How long do I have to return an item?", "relevant": ["RET-1"]},
+  {"id": "S2", "type": "simple", "query": "How long does a refund take to reach my bank account?", "relevant": ["REF-1"]},
+  {"id": "S3", "type": "simple", "query": "Which carriers do you use for delivery?", "relevant": ["SHP-7"]},
+  {"id": "S4", "type": "simple", "query": "Do you deliver to addresses in France?", "relevant": ["SHP-6"]},
+  {"id": "S5", "type": "simple", "query": "How much does next-day delivery cost?", "relevant": ["SHP-1"]},
+  {"id": "S6", "type": "simple", "query": "What does NovaCare Plus cost and what does it add?", "relevant": ["NC-2"]},
+
+  {"id": "V1", "type": "vague", "query": "my screen got smashed, am I covered?", "relevant": ["NC-2", "NC-3", "WAR-2"]},
+  {"id": "V2", "type": "vague", "query": "parcel never showed up", "relevant": ["SHP-3"]},
+  {"id": "V3", "type": "vague", "query": "earbuds don't fit me, can I send them back", "relevant": ["RET-2", "RET-6"]},
+  {"id": "V4", "type": "vague", "query": "box was crushed and the thing inside is broken", "relevant": ["RET-3"]},
+  {"id": "V5", "type": "vague", "query": "battery is already rubbish", "relevant": ["WAR-5"]},
+  {"id": "V6", "type": "vague", "query": "can I get my money back for the cover plan", "relevant": ["REF-5"]},
+
+  {"id": "M1", "type": "multi_nuanced", "query": "Can I return a damaged laptop after 45 days if I bought the extended warranty?", "relevant": ["RET-1", "RET-3", "NC-2", "NC-3"]},
+  {"id": "M2", "type": "multi_nuanced", "query": "I'm a Plus member and opened my laptop 20 days ago. Can I still return it, and is there a fee?", "relevant": ["RET-2", "RET-5", "REF-2"]},
+  {"id": "M3", "type": "multi_nuanced", "query": "My phone stopped charging 14 months after delivery and I have NovaCare. Will I get a refund or a repair?", "relevant": ["NC-1", "NC-4", "WAR-3"]},
+  {"id": "M4", "type": "multi_nuanced", "query": "My order is 8 business days late and I want my money back. What are my options and how long will the refund take?", "relevant": ["SHP-3", "REF-1"]},
+  {"id": "M5", "type": "multi_nuanced", "query": "I dropped my headphones after 3 weeks and now they don't work. Can I return them, or claim on the warranty if I don't have NovaCare?", "relevant": ["RET-4", "WAR-2", "RET-6"]},
+  {"id": "M6", "type": "multi_nuanced", "query": "If I return a monitor that I bought NovaCare for, do I get the plan money back and do I have to pay return postage?", "relevant": ["REF-5", "REF-4"]},
+  {"id": "M7", "type": "multi_nuanced", "query": "I opened my earbuds and one side has been faulty since day 10. Can I return them even though the seal is broken?", "relevant": ["RET-2", "RET-4", "RET-6"]},
+  {"id": "M8", "type": "multi_nuanced", "query": "You sent me the wrong keyboard 10 days ago. Can I exchange it and will you refund the delivery charge?", "relevant": ["REF-3", "REF-4"]}
+]

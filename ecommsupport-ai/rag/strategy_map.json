@@ -1,0 +1,8 @@
+{
+  "best_strategy_by_type": {
+    "simple": "simple",
+    "multi_nuanced": "simple",
+    "vague": "simple"
+  },
+  "k": 5
+}

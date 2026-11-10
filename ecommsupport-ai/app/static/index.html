@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NovaShop Support · eCommSupport-AI</title>
+<style>
+  :root {
+    --ink: #17212b; --muted: #5d6b78; --line: #e3e7eb; --bg: #f5f6f4; --panel: #ffffff;
+    --brand: #0f6b5c; --brand-soft: #e3f1ee; --warn: #a24a12; --warn-soft: #fbece2;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 -apple-system, "Segoe UI", Inter, system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: -0.01em; }
+  header h1 span { color: var(--brand); }
+  header .spacer { flex: 1; }
+  select, button { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
+  button { cursor: pointer; }
+  button.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; height: calc(100vh - 59px); }
+  #chat { display: flex; flex-direction: column; min-width: 0; }
+  #log { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+  .msg { max-width: 72ch; padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; word-wrap: break-word; }
+  .user { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: 4px; }
+  .bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .bot.blocked { background: var(--warn-soft); border-color: #f0cfb8; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 24px 10px; }
+  .chip { font-size: 13px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+  .chip:hover { border-color: var(--brand); color: var(--brand); }
+  form { display: flex; gap: 8px; padding: 14px 24px 20px; border-top: 1px solid var(--line); background: var(--panel); }
+  form input { flex: 1; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+  aside { border-left: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 18px 20px; }
+  aside h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 18px 0 8px; }
+  aside h2:first-child { margin-top: 0; }
+  .kv { display: grid; grid-template-columns: 96px 1fr; gap: 4px 10px; font-size: 13px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 6px; background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+  .tag.smart { background: #ece6fb; color: #5a3aa8; }
+  .tag.block { background: var(--warn-soft); color: var(--warn); }
+  .tool { font: 12px/1.45 var(--mono); background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; white-space: pre-wrap; word-break: break-all; }
+  .empty { color: var(--muted); font-size: 13px; }
+  .typing { color: var(--muted); font-style: italic; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } aside { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Nova<span>Shop</span> Support</h1>
+  <label for="customer" class="meta" style="margin:0">Signed in as</label>
+  <select id="customer"></select>
+  <div class="spacer"></div>
+  <button id="reset">New conversation</button>
+</header>
+<main>
+  <section id="chat">
+    <div id="log" aria-live="polite"></div>
+    <div class="chips" id="chips"></div>
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="Ask about an order, a product, returns or warranty…" maxlength="2000">
+      <button class="primary" type="submit">Send</button>
+    </form>
+  </section>
+  <aside id="inspector">
+    <h2>Last turn</h2>
+    <div id="turn" class="empty">Send a message to see routing, tools, retrieval and cost.</div>
+    <h2>Memory (Upstash Redis)</h2>
+    <div id="memory" class="empty">Empty.</div>
+  </aside>
+</main>
+<script>
+const $ = (s) => document.querySelector(s);
+const SAMPLES = [
+  "Where is my order ORD-1001?",
+  "Tell me about your wireless keyboard",
+  "Can I return a damaged laptop after 45 days if I bought the extended warranty? It's ORD-1002.",
+  "Which carriers do you use?",
+  "Is that order still under warranty?",
+  "Write me Python code to sort a list",
+];
+let session = null;
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+async function newSession() {
+  const r = await fetch("/api/session", { method: "POST" }); session = (await r.json()).session_id;
+  $("#log").replaceChildren(el("div", "msg bot", "Hi, I'm Nova. How can I help with your NovaShop order today?"));
+  $("#turn").replaceChildren(el("span", "empty", "Send a message to see routing, tools, retrieval and cost."));
+  refreshMemory();
+}
+
+async function loadCustomers() {
+  const r = await fetch("/api/customers"); const { customers } = await r.json();
+  for (const c of customers) { const o = el("option", null, `${c.label} · ${c.id}`); o.value = c.id; $("#customer").append(o); }
+}
+
+function renderTurn(d) {
+  const box = el("div");
+  const kv = el("dl", "kv");
+  const add = (k, v) => { kv.append(el("dt", null, k)); const dd = el("dd"); typeof v === "string" ? dd.append(v) : dd.append(v); kv.append(dd); };
+  if (d.blocked) {
+    const t = el("span", "tag block", `blocked · ${d.guardrail.category}`); add("Guardrail", t);
+    add("Layer", d.guardrail.layer);
+  } else {
+    const tier = d.route.tier === "smart" ? "gpt-4o" : "gpt-4o-mini";
+    add("Model", el("span", `tag ${d.route.tier}`, tier));
+    add("Why", d.route.reasons.join("; "));
+    add("Guardrail", `passed (${d.guardrail.layer})`);
+  }
+  add("Latency", `${Math.round(d.latency_ms)} ms`);
+  add("Tokens", String(d.cost.total_tokens || 0));
+  add("Cost", `$${(d.cost.total_usd || 0).toFixed(5)}`);
+  if (d.memory_compacted) add("Memory", "older turns summarised");
+  box.append(kv);
+  if (d.tool_calls.length) {
+    box.append(el("h2", null, "Tool calls"));
+    for (const t of d.tool_calls) box.append(el("div", "tool", `${t.ok ? "✓" : "✗"} ${t.name}(${JSON.stringify(t.args)})  ${Math.round(t.latency_ms)}ms`));
+  }
+  if (d.retrievals.length) {
+    box.append(el("h2", null, "Policy retrieval"));
+    for (const r of d.retrievals) box.append(el("div", "tool", `${r.strategy} [${r.query_type}]\n→ ${r.sections.join(", ")}`));
+  }
+  if (d.hallucinated_params && d.hallucinated_params.length)
+    box.append(el("div", "tool", `dropped params: ${JSON.stringify(d.hallucinated_params)}`));
+  $("#turn").replaceChildren(box);
+}
+
+async function refreshMemory() {
+  if (!session) return;
+  const r = await fetch(`/api/memory/${$("#customer").value}/${session}`); const m = await r.json();
+  const kv = el("dl", "kv");
+  kv.append(el("dt", null, "Window"), el("dd", null, `${m.window_messages} messages`));
+  kv.append(el("dt", null, "Facts"), el("dd", null, Object.keys(m.facts).length ? JSON.stringify(m.facts) : "–"));
+  kv.append(el("dt", null, "Summary"), el("dd", null, m.summary || "–"));
+  $("#memory").replaceChildren(kv);
+}
+
+async function send(text) {
+  if (!text.trim()) return;
+  $("#log").append(el("div", "msg user", text));
+  const typing = el("div", "msg bot typing", "Nova is typing…"); $("#log").append(typing);
+  $("#log").scrollTop = $("#log").scrollHeight;
+  try {
+    const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: session, customer_id: $("#customer").value, message: text }) });
+    if (!r.ok) throw new Error(await r.text());
+    const d = await r.json();
+    typing.className = "msg bot" + (d.blocked ? " blocked" : ""); typing.textContent = d.text;
+    renderTurn(d); refreshMemory();
+  } catch (e) { typing.className = "msg bot blocked"; typing.textContent = "Something went wrong: " + e.message; }
+  $("#log").scrollTop = $("#log").scrollHeight;
+}
+
+$("#form").addEventListener("submit", (e) => { e.preventDefault(); const v = $("#input").value; $("#input").value = ""; send(v); });
+$("#reset").addEventListener("click", newSession);
+$("#customer").addEventListener("change", newSession);
+for (const s of SAMPLES) { const c = el("button", "chip", s); c.type = "button"; c.onclick = () => send(s); $("#chips").append(c); }
+loadCustomers().then(newSession);
+</script>
+</body>
+</html>

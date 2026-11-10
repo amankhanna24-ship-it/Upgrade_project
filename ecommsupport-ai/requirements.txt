@@ -1,0 +1,18 @@
+# Tested with the versions in brackets (November 2026).
+mcp>=2.3,<3              # [2.3.0] MCP v2: MCPServer (formerly FastMCP) + Client
+openai>=3.40             # [3.48.0]
+pinecone>=10.0           # [10.3.0]
+upstash-redis>=1.9       # [1.9.0]
+langsmith>=0.14          # [0.14.17]
+PyMySQL>=1.1             # [1.2.4]
+cryptography>=42         # needed by PyMySQL for MySQL 8 caching_sha2 auth
+fastapi>=0.115           # [0.162.2]
+uvicorn>=0.30            # [0.54.0]
+pydantic>=2.8
+python-dotenv>=1.0
+numpy>=2.0
+tiktoken>=0.8
+
+# tests
+pytest>=8
+pytest-asyncio>=0.24
